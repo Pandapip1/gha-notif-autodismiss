@@ -23,55 +23,39 @@ async function listNotifications() {
 }
 
 async function getPRFromNotification(notification) {
-  const subj = notification.subject;
-  if (!subj || subj.type !== "PullRequest") {
-    return null;
-  }
-  if (!subj.url) {
-    return null;
-  }
+  const { subject } = notification;
+  if (!subject || subject.type !== "PullRequest" || !subject.url) return null;
+
   try {
-    const prResp = await octokit.request("GET " + subj.url);
+    const prResp = await octokit.request("GET " + subject.url);
     return prResp.data;
   } catch (err) {
-    console.warn("Could not fetch PR from subject URL:", subj.url, err.message);
+    console.warn("Could not fetch PR from subject URL:", subject.url, err.message);
     return null;
   }
 }
 
 async function fetchPRTimeline(owner, repo, prNumber) {
-  const resp = await octokit.request("GET /repos/{owner}/{repo}/issues/{issue_number}/timeline", {
-    owner,
-    repo,
-    issue_number: prNumber,
-  });
+  const resp = await octokit.request(
+    "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline",
+    { owner, repo, issue_number: prNumber }
+  );
   return resp.data;
 }
 
 function isTimelineAllowed(events) {
-  let hasDisallowedEvent = false;
+  const allowed = new Set(["opened", "committed", "auto_merge_enabled", "merged", "closed", "head_ref_deleted"]);
   for (const ev of events) {
-    switch (ev.event) {
-      case "opened":
-      case "committed":
-      case "auto_merge_enabled":
-      case "merged":
-      case "closed":
-      case "head_ref_deleted":
-        break;
-      default:
-        console.log("Disallowed event in timeline:", ev.event, ev);
-        hasDisallowedEvent = true;
-        break;
+    if (!allowed.has(ev.event)) {
+      console.log("Disallowed event in timeline:", ev.event, ev);
+      return false;
     }
   }
-  return !hasDisallowedEvent;
+  return true;
 }
 
 async function markThreadDone(threadId) {
-  await octokit.request("DELETE /notifications/threads/{thread_id}", {
-    thread_id: threadId,
-  });
+  await octokit.request("DELETE /notifications/threads/{thread_id}", { thread_id: threadId });
   console.log(`Thread ${threadId} marked done.`);
 }
 
@@ -84,20 +68,11 @@ async function processOne(notification) {
   if (!fullName) return;
 
   const [owner, repo] = fullName.split("/");
-  if (owner !== TARGET_OWNER || repo !== TARGET_REPO) {
-    return;
-  }
+  if (owner !== TARGET_OWNER || repo !== TARGET_REPO) return;
+  if (user.login !== PR_AUTHOR) return;
+  if (!TITLE_REGEX.test(title)) return;
 
-  if (user.login !== PR_AUTHOR) {
-    return;
-  }
-
-  if (!TITLE_REGEX.test(title)) {
-    return;
-  }
-
-  // Fetch timeline events
-  let timelineEvents = [];
+  let timelineEvents;
   try {
     timelineEvents = await fetchPRTimeline(owner, repo, prNumber);
   } catch (err) {
@@ -105,11 +80,10 @@ async function processOne(notification) {
     return;
   }
 
-  if (!isTimelineAllowed(timelineEvents)) {
-    return;
-  }
+  if (!isTimelineAllowed(timelineEvents)) return;
 
   console.log(`Notification thread ${notification.id} qualifies for dismissal (PR #${prNumber}, title=${title})`);
+
   try {
     await markThreadDone(notification.id);
   } catch (err) {
@@ -119,10 +93,12 @@ async function processOne(notification) {
 
 async function main() {
   try {
-    const notifs = await listNotifications();
-    for (const nt of notifs) {
-      await processOne(nt);
-    }
+    const notifications = await listNotifications();
+
+    // Process all notifications in parallel
+    await Promise.allSettled(notifications.map(processOne));
+
+    console.log("All notifications processed.");
   } catch (err) {
     console.error("Fatal error:", err);
     process.exit(1);
