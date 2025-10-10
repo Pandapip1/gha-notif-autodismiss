@@ -15,12 +15,11 @@ const PR_AUTHOR = process.env.PR_AUTHOR;
 const TITLE_REGEX = new RegExp(process.env.TITLE_REGEX);
 
 async function listNotifications() {
-  const resp = await octokit.request("GET /notifications", {
+  return await octokit.paginate("GET /notifications", {
     all: true,
     participating: false,
     per_page: 100,
   });
-  return resp.data;
 }
 
 async function getPRFromNotification(notification) {
