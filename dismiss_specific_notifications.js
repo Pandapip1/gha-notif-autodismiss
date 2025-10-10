@@ -54,8 +54,11 @@ function isTimelineAllowed(events) {
   for (const ev of events) {
     switch (ev.event) {
       case "opened":
+      case "committed":
       case "auto_merge_enabled":
       case "merged":
+      case "closed":
+      case "head_ref_deleted":
         break;
       default:
         console.log("Disallowed event in timeline:", ev.event, ev);
