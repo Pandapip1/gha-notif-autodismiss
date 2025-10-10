@@ -52,7 +52,10 @@ async function processOne(notification) {
 
   // Make sure it's in the target repo
   const repoFullName = checkData.repository?.full_name;
-  if (repoFullName !== `${TARGET_OWNER}/${TARGET_REPO}`) return;
+  if (repoFullName !== `${TARGET_OWNER}/${TARGET_REPO}`) {
+    console.log(`Notification ${notification.id} has repository "${checkData.repository?.full_name}"`);
+    return;
+  }
 
   // Look for canceled check runs with the "higher priority" message
   const conclusion = checkData.conclusion || checkData.status;
