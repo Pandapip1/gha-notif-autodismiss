@@ -80,9 +80,10 @@ async function processOne(notification) {
 async function main() {
   try {
     const notifications = await listNotifications();
-    for (const nt of notifications) {
-      await processOne(nt);
-    }
+
+    await Promise.allSettled(notifications.map(processOne));
+
+    console.log("All notifications processed.");
   } catch (err) {
     console.error("Fatal error:", err);
     process.exit(1);
