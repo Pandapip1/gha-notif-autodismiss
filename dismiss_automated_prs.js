@@ -39,7 +39,7 @@ const TITLE_REGEX = new RegExp(process.env.TITLE_REGEX);
 
 async function listNotifications() {
   return await octokit.paginate("GET /notifications", {
-    all: true,
+    all: false,
     participating: false,
     per_page: 100,
   });
