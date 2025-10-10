@@ -1,5 +1,4 @@
 const { Octokit } = require("@octokit/rest");
-const { graphql } = require("@octokit/graphql");
 
 const TOKEN = process.env.GITHUB_TOKEN;
 if (!TOKEN) {
@@ -8,7 +7,6 @@ if (!TOKEN) {
 }
 
 const octokit = new Octokit({ auth: TOKEN });
-const graphqlWithAuth = graphql.defaults({ headers: { authorization: `token ${TOKEN}` } });
 
 // Config from environment
 const TARGET_OWNER = process.env.TARGET_OWNER;
@@ -17,7 +15,6 @@ const PR_AUTHOR = process.env.PR_AUTHOR;
 const TITLE_REGEX = new RegExp(process.env.TITLE_REGEX);
 
 async function listNotifications() {
-  // List all notifications (default is unread only)
   const resp = await octokit.request("GET /notifications", {
     all: true,
     participating: false,
@@ -44,66 +41,29 @@ async function getPRFromNotification(notification) {
 }
 
 async function fetchPRTimeline(owner, repo, prNumber) {
-  const query = `
-    query($owner: String!, $repo: String!, $prNumber: Int!) {
-      repository(owner: $owner, name: $repo) {
-        pullRequest(number: $prNumber) {
-          timelineItems(first: 100) {
-            nodes {
-              __typename
-              ... on PullRequestAutoMergeEnabledEvent {
-                actor { login }
-              }
-              ... on PullRequestMergedEvent {
-                actor { login }
-              }
-              ... on PullRequestCommit {
-                commit { oid }
-              }
-              ... on PullRequestReview {
-                author { login }
-                state
-              }
-              ... on IssueComment {
-                author { login }
-                body
-              }
-              ... on PullRequestReviewDismissedEvent {
-                actor { login }
-              }
-              ... on PullRequestReviewThread {
-                isResolved
-              }
-              # add any other event types you want to inspect
-            }
-          }
-        }
-      }
-    }
-  `;
-  const resp = await graphqlWithAuth(query, {
+  const resp = await octokit.request("GET /repos/{owner}/{repo}/issues/{issue_number}/timeline", {
     owner,
     repo,
-    prNumber,
+    issue_number: prNumber,
   });
-  return resp.repository.pullRequest.timelineItems.nodes;
+  return resp.data;
 }
 
-function isTimelineAllowed(nodes) {
-  for (const ev of nodes) {
-    switch (ev.__typename) {
-      // allowed events
-      case "PullRequestAutoMergeEnabledEvent":
-      case "PullRequestMergedEvent":
-      case "PullRequestCommit":
+function isTimelineAllowed(events) {
+  let hasDisallowedEvent = false;
+  for (const ev of events) {
+    switch (ev.event) {
+      case "opened":
+      case "auto_merge_enabled":
+      case "merged":
         break;
-      // Other events should make the workflow get kept
       default:
-        console.log("Disallowed event in timeline:", ev.__typename, ev);
-        return false;
+        console.log("Disallowed event in timeline:", ev.event, ev);
+        hasDisallowedEvent = true;
+        break;
     }
   }
-  return true;
+  return !hasDisallowedEvent;
 }
 
 async function markThreadDone(threadId) {
@@ -135,15 +95,15 @@ async function processOne(notification) {
   }
 
   // Fetch timeline events
-  let timelineNodes = [];
+  let timelineEvents = [];
   try {
-    timelineNodes = await fetchPRTimeline(owner, repo, prNumber);
+    timelineEvents = await fetchPRTimeline(owner, repo, prNumber);
   } catch (err) {
     console.warn("Could not fetch timeline for PR", prNumber, err.message);
     return;
   }
 
-  if (!isTimelineAllowed(timelineNodes)) {
+  if (!isTimelineAllowed(timelineEvents)) {
     return;
   }
 
