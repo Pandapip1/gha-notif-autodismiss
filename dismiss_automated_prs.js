@@ -1,4 +1,5 @@
 const { Octokit } = require("@octokit/rest");
+import { throttling } from "@octokit/plugin-throttling";
 
 const TOKEN = process.env.GITHUB_TOKEN;
 if (!TOKEN) {
@@ -6,7 +7,8 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-const octokit = new Octokit({ auth: TOKEN });
+const ThrottledOctokit = Octokit.plugin(throttling);
+const octokit = new ThrottledOctokit({ auth: TOKEN });
 
 // Config from environment
 const TARGET_OWNER = process.env.TARGET_OWNER;
