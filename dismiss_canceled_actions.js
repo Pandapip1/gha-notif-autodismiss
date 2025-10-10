@@ -25,6 +25,7 @@ async function listNotifications() {
 async function getCheckRunFromNotification(notification) {
   const subj = notification.subject;
   if (!subj || subj.type !== "CheckSuite" && subj.type !== "CheckRun") {
+    console.log(`Notification ${notification.id} has type "${subj?.type}"`);
     return null;
   }
 
