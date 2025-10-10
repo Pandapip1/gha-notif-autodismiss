@@ -27,4 +27,4 @@ jobs:
           TARGET_REPO: "eip-info-website"
           PR_AUTHOR: "submodule-update[bot]"
           TITLE_REGEX: "^Automated submodule update"
-        run: node dismiss_specific_notifications.js
+        run: node dismiss_automated_prs.js
