@@ -74,7 +74,7 @@ async function fetchPRTimeline(owner, repo, prNumber) {
               ... on PullRequestReviewThread {
                 isResolved
               }
-              // add any other event types you want to inspect
+              # add any other event types you want to inspect
             }
           }
         }
