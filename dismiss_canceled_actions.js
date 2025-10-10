@@ -51,6 +51,8 @@ async function getCheckRunFromNotification(notification) {
   }
 
   if (!subj.url) {
+    console.log(`Notification ${notification.id} has no URL`);
+    console.dir(notification);
     return null;
   }
 
