@@ -1,4 +1,4 @@
-const { Octokit } = require("@octokit/rest");
+import { Octokit } from "@octokit/rest";
 import { throttling } from "@octokit/plugin-throttling";
 
 const TOKEN = process.env.GITHUB_TOKEN;
