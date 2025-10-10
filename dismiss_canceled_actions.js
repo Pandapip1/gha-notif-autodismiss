@@ -50,10 +50,14 @@ async function getCheckRunFromNotification(notification) {
     return null;
   }
 
-  try {
-    const resp0 = await octokit.request("GET " + notification.url);
-    console.dir(resp0.data);
+  if (!subj.url) {
+    console.log(`Notification ${notification.id} has no URL`);
     return null;
+  }
+
+  try {
+    const resp = await octokit.request("GET " + subj.url);
+    return resp.data;
   } catch (err) {
     console.warn("Could not fetch check data from subject URL:", subj.url, err.message);
     return null;
