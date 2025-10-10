@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  dismiss:
+  eip-info-website-automated-submodule-update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,3 +28,23 @@ jobs:
           PR_AUTHOR: "submodule-update[bot]"
           TITLE_REGEX: "^Automated submodule update"
         run: node dismiss_automated_prs.js
+  nur-update-canceled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+    
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install @octokit/rest @octokit/graphql
+
+      - name: Dismiss matching notifications
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          TARGET_OWNER: "nix-community"
+          TARGET_REPO: "NUR"
+        run: node dismiss_canceled_actions.js
