@@ -68,15 +68,15 @@ async function markThreadDone(threadId) {
 }
 
 async function processOne(notification) {
-  const checkData = await getCheckRunFromNotification(notification);
-  if (!checkData) return;
-
   // Make sure it's in the target repo
-  const repoFullName = checkData.repository?.full_name;
+  const repoFullName = notification.repository?.full_name;
   if (repoFullName !== `${TARGET_OWNER}/${TARGET_REPO}`) {
-    console.log(`Notification ${notification.id} has repository "${checkData.repository?.full_name}"`);
+    console.log(`Notification ${notification.id} has repository "${notification.repository?.full_name}"`);
     return;
   }
+
+  const checkData = await getCheckRunFromNotification(notification);
+  if (!checkData) return;
 
   // Look for canceled check runs with the "higher priority" message
   const conclusion = checkData.conclusion || checkData.status;
