@@ -37,7 +37,7 @@ const TARGET_REPO = process.env.TARGET_REPO;
 
 async function listNotifications() {
   return await octokit.paginate("GET /notifications", {
-    all: true,
+    all: false,
     participating: false,
     per_page: 100,
   });
