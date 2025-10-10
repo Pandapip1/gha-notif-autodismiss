@@ -1,0 +1,27 @@
+name: Dismiss Specific PR Notifications
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  dismiss:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install @octokit/rest @octokit/graphql
+
+      - name: Dismiss matching notifications
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          TARGET_OWNER: "3webs-org"
+          TARGET_REPO: "eip-info-website"
+          PR_AUTHOR: "submodule-update[bot]"
+          TITLE_REGEX: "^Automated submodule update"
+        run: node dismiss_idle_notifications.js
