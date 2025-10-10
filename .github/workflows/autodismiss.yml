@@ -18,7 +18,7 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install @octokit/rest @octokit/graphql
+        run: npm install @octokit/rest @octokit/graphql @octokit/plugin-throttling
 
       - name: Dismiss matching notifications
         env:
@@ -40,7 +40,7 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install @octokit/rest @octokit/graphql
+        run: npm install @octokit/rest @octokit/graphql @octokit/plugin-throttling
 
       - name: Dismiss matching notifications
         env:
